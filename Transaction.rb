@@ -1,6 +1,7 @@
 require 'json'
-class Transactions
 
+# Class Transaction
+class Transactions
   attr_accessor :amount, :account_name, :description, :currency, :date
 
   def initialize(date, description, amount, currency, account_name)
@@ -11,9 +12,10 @@ class Transactions
     @account_name = account_name
   end
 
+  # Methods for objects representation in JSON.
   def to_json(*args)
     {
-        JSON.create_id => "transactions",
+        JSON.create_id => 'transactions',
         'date' => date,
         'description' => description,
         'amount' => amount,
@@ -25,5 +27,4 @@ class Transactions
   def self.json_create(h)
     new(h['date'], h['description'], h['amount'], h['currency'], h['account_name'])
   end
-
 end

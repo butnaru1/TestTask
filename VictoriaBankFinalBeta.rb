@@ -18,14 +18,15 @@ browser.text_field(name: 'password').set psw
 browser.button(type: 'submit').click
 
 # Wait for page charging.
-sleep(2)
+sleep 2
 
 # Fetch and parse HTML document
 doc = Nokogiri::HTML(browser.html)
 # Collect information about accounts
 accounts_arr = []
+account_struct = Struct.new(:name, :balance, :currency, :nature)
 nature, name, currency, nature = ''
-doc.css('//div[@class="contracts"]/div/div').each do |div|
+doc.css('div.contracts/div/div').each do |div|
   nature = div.text.strip if div.attr('class') == 'section-title h-small'
   div.search('div').each do |second_div|
     name = second_div.search('a.name').text.strip
@@ -34,7 +35,7 @@ doc.css('//div[@class="contracts"]/div/div').each do |div|
       third_div.search('span').each do |span|
         if span.attr('class') == 'amount'
           balance = span.text.strip
-          accounts_arr.push(Array.new([name, balance, currency, nature]))
+          accounts_arr << account_struct.new(name, balance, currency, nature)
         end
       end
     end
@@ -43,35 +44,35 @@ end
 
 # Go to transaction page
 browser.link(href: '#menu/MAIN_215.CP_HISTORY').click
-sleep(2)
+sleep 2
 browser.input(name: 'from').click
 # Set period from two month early
 (1..2).each { |i| browser.a(title: '< Prev').click }
 # Get current date
-puts current_date = Time.now.strftime('%-d')
+current_date = Time.now.strftime('%-d')
 browser.a(text: current_date).click
 full_account_array = []
 # Search transaction for each account
 (0...accounts_arr.size).each do |i|
-  iban = accounts_arr[i][0]
+  iban = accounts_arr[i].name
   transaction_arr = []
   browser.div(class: 'chosen-container chosen-container-single contract-select chosen-container-single-nosearch').click
   browser.span(text: iban).click
 
   # Wait for page charging.
-  sleep(10)
+  sleep 10
   # Initializing variables.
   day_, date, description, amount, currency = ''
   # Fetch and parse HTML document
   doc = Nokogiri::HTML(browser.html)
-  doc.css('//div[@class="operations"]').each do |div|
-    div.search('div[@class="month-delimiter"]').each do |month_div|
+  doc.css('div.operations').each do |div|
+    div.search('div.month-delimiter').each do |month_div|
       month_year = month_div.text.strip
-      div.search('div[@class="day-operations"]').each do |span|
-        span.search('div[@class="day-header"]').each do |day|
+      div.search('div.day-operations').each do |span|
+        span.search('div.day-header').each do |day|
           day_ = day.text.strip.gsub(/[^\d]/, '')
         end
-        span.search('ul[@class="operations-list"]/li').each do |list|
+        span.search('ul.operations-list/li').each do |list|
           list.search('span').each do |cell|
             time = cell.text.strip if cell.attr('class') == 'history-item-time'
             date = "#{day_} " + "#{month_year}" + "#{time}"
@@ -82,21 +83,21 @@ full_account_array = []
             money = cell.text.strip
             amount = money.to_s.scan(/\+?\d+\.\d+/)
             currency = money.to_s.scan(/[A-Z]+/)
-            transaction_arr.push(Transactions.new(date, description, amount, currency, iban))
+            transaction_arr << Transactions.new(date, description, amount, currency, iban)
           end
         end
       end
     end
   end
-  full_account_array.push(Accounts.new((accounts_arr[i][0]).to_s,
-                                       (accounts_arr[i][1]).to_s,
-                                       (accounts_arr[i][2]).to_s,
-                                       (accounts_arr[i][3]).to_s,
-                                       transaction_arr))
+
+  full_account_array << Accounts.new(accounts_arr[i].name,
+                                     accounts_arr[i].balance,
+                                     accounts_arr[i].currency,
+                                     accounts_arr[i].nature,
+                                     transaction_arr)
 end
 # Show the result.
 full_account_array.each do |account|
   puts JSON.pretty_generate account
 end
-
 browser.close

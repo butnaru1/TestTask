@@ -1,5 +1,4 @@
 require 'json'
-require 'Transactions'
 
 # Class Accounts
 class Accounts

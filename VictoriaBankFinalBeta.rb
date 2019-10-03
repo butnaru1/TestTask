@@ -69,8 +69,7 @@ full_account_array = []
           day_ = day.text.strip.gsub(/[^\d]/, '')
         end
         span.css('ul.operations-list li').each do |list|
-          time = list.css('span.history-item-time').text.strip
-          date = "#{year}" + '-' + "#{month}" + '-' + "#{day_}" + ' ' "#{time}"
+          date = "#{year}" + '-' + "#{month}" + '-' + "#{day_}"
           description = list.css('span.history-item-description').text.strip
           sign = if list.css('span.amount-sign').text.strip != ''
                    list.css('span.amount-sign').text.strip

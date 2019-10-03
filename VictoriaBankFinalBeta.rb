@@ -26,19 +26,13 @@ doc = Nokogiri::HTML(browser.html)
 accounts_arr = []
 account_struct = Struct.new(:name, :balance, :currency, :nature)
 nature, name, currency, nature = ''
-doc.css('div.contracts/div/div').each do |div|
+doc.css('div.contracts div.contracts-section div').each do |div|
   nature = div.text.strip if div.attr('class') == 'section-title h-small'
-  div.search('div').each do |second_div|
-    name = second_div.search('a.name').text.strip
-    second_div.search('div/div').each do |third_div|
-      currency = third_div.text.strip if third_div.attr('class') == 'currency-icon'
-      third_div.search('span').each do |span|
-        if span.attr('class') == 'amount'
-          balance = span.text.strip
-          accounts_arr << account_struct.new(name, balance, currency, nature)
-        end
-      end
-    end
+  div.css('div.main-info').each do |second_div|
+    name = second_div.css('a.name').text.strip
+    currency = second_div.css('div.icon div.currency-icon').text.strip
+    balance = second_div.css('span.amount').text.strip.to_f
+    accounts_arr << account_struct.new(name, balance, currency, nature)
   end
 end
 
@@ -60,31 +54,34 @@ full_account_array = []
   browser.span(text: iban).click
 
   # Wait for page charging.
-  sleep 10
+  sleep 5
   # Initializing variables.
   day_, date, description, amount, currency = ''
   # Fetch and parse HTML document
   doc = Nokogiri::HTML(browser.html)
   doc.css('div.operations').each do |div|
-    div.search('div.month-delimiter').each do |month_div|
+    div.css('div.month-delimiter').each do |month_div|
       month_year = month_div.text.strip
-      div.search('div.day-operations').each do |span|
-        span.search('div.day-header').each do |day|
+      year = month_year.scan(/[\d]/).join('')
+      month = Date::MONTHNAMES.index("#{month_year.scan(/[A-z]+/).join('')}")
+      div.css('div.day-operations').each do |span|
+        span.css('div.day-header').each do |day|
           day_ = day.text.strip.gsub(/[^\d]/, '')
         end
-        span.search('ul.operations-list/li').each do |list|
-          list.search('span').each do |cell|
-            time = cell.text.strip if cell.attr('class') == 'history-item-time'
-            date = "#{day_} " + "#{month_year}" + "#{time}"
-            description = cell.text.strip if cell.attr('class') == 'history-item-description'
-            next unless cell.attr('class') == 'history-item-amount transaction ' ||
-                cell.attr('class') == 'history-item-amount transaction income'
-
-            money = cell.text.strip
-            amount = money.to_s.scan(/\+?\d+\.\d+/)
-            currency = money.to_s.scan(/[A-Z]+/)
-            transaction_arr << Transactions.new(date, description, amount, currency, iban)
-          end
+        span.css('ul.operations-list li').each do |list|
+          time = list.css('span.history-item-time').text.strip
+          date = "#{year}" + '-' + "#{month}" + '-' + "#{day_}" + ' ' "#{time}"
+          description = list.css('span.history-item-description').text.strip
+          sign = if list.css('span.amount-sign').text.strip != ''
+                   list.css('span.amount-sign').text.strip
+                 else
+                   '-'
+                 end
+          amount = list.css('span.amount').text.strip
+          sign_amount = (sign + amount).to_f
+          currency = list.css('span.amount.currency').text.strip
+          transaction_arr << Transactions.new(date, description, sign_amount, currency, iban)
+          # end
         end
       end
     end

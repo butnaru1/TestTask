@@ -1,8 +1,9 @@
 require 'watir'
 require 'webdrivers'
 require 'nokogiri'
-require 'Accounts'
-require 'Transactions'
+require_relative 'Accounts'
+require_relative 'Transactions'
+require_relative 'simple_account'
 
 # Class VictoriaBank
 class VictoriaBank
@@ -43,18 +44,18 @@ class VictoriaBank
     sleep 3
     # Search transaction for each account
     @full_account_array = []
-    (0...@accounts.size).each do |i|
-      iban = @accounts[i].name
+    @accounts.each do |account_item|
+      iban = account_item.name
       @browser.div(class: 'chosen-container chosen-container-single contract-select chosen-container-single-nosearch').click
       @browser.span(text: iban).click
       # Wait for page charging.
       sleep 5
       # Fetch and parse HTML document
       transaction_arr = parse_transactions(iban, @browser.html)
-      @full_account_array << Accounts.new(@accounts[i].name,
-                                          @accounts[i].balance,
-                                          @accounts[i].currency,
-                                          @accounts[i].nature,
+      @full_account_array << Accounts.new(account_item.name,
+                                          account_item.balance,
+                                          account_item.currency,
+                                          account_item.nature,
                                           transaction_arr)
     end
   end
@@ -70,14 +71,13 @@ class VictoriaBank
     doc = Nokogiri::HTML(html)
     accounts_arr = []
     nature = ''
-    account_struct = Struct.new(:name, :balance, :currency, :nature)
     doc.css('div.contracts div.contracts-section div').each do |div|
       nature = div.text.strip if div.attr('class') == 'section-title h-small'
       div.css('div.main-info').each do |second_div|
         name = second_div.css('a.name').text.strip
         currency = second_div.css('div.icon div.currency-icon').text.strip
         balance = second_div.css('span.amount').text.strip.to_f
-        accounts_arr << account_struct.new(name, balance, currency, nature)
+        accounts_arr << SimpleAccount.new(name, balance, currency, nature)
       end
     end
     accounts_arr
@@ -122,5 +122,4 @@ class VictoriaBank
   end
 
 end
-
 

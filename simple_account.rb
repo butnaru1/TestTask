@@ -1,17 +1,15 @@
 require 'json'
 
-# Class Accounts
-class Accounts
-  attr_accessor :name, :currency, :nature, :transactions, :balance
+# Account without Transaction
+class SimpleAccount
+  attr_accessor :name, :currency, :nature, :balance
 
-  def initialize(name, balance, currency, nature, transactions)
+  def initialize(name, balance, currency, nature)
     @name = name
     @balance = balance
     @currency = currency
     @nature = nature
-    @transactions = transactions
   end
-
   # Methods for objects representation in JSON.
   def as_json(options={})
     {
@@ -19,7 +17,6 @@ class Accounts
         balance: @balance,
         currency: @currency,
         nature: @nature,
-        transactions: @transactions
     }
   end
 

@@ -12,19 +12,18 @@ class Transactions
     @account_name = account_name
   end
 
-  # Methods for objects representation in JSON.
-  def to_json(*args)
+  def as_json(options={})
     {
-        JSON.create_id => 'transactions',
-        'date' => date,
-        'description' => description,
-        'amount' => amount,
-        'currency' => currency,
-        'account_name' => account_name
-    }.to_json(*args)
+        date: @date,
+        description: @description,
+        amount: @amount,
+        currency: @currency,
+        account_name: @account_name
+    }
   end
 
-  def self.json_create(h)
-    new(h['date'], h['description'], h['amount'], h['currency'], h['account_name'])
+  def to_json(*options)
+    as_json(*options).to_json(*options)
   end
+
 end
